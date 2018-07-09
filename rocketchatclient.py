@@ -1,4 +1,5 @@
 import datetime
+import time
 import hashlib
 
 from DDPClient import DDPClient
@@ -53,10 +54,12 @@ class RocketChatClient(EventEmitter):
     def connect(self):
         """Connect to the meteor server"""
         self.ddp_client.connect()
+        #print("[+] rocketchat: connected")
 
     def close(self):
         """Close connection with meteor server"""
         self.ddp_client.close()
+        #print('[-] rocketchat: connection closed: %s (%d)' % (reason, code))
 
     def _reconnected(self):
         """Reconnect
@@ -156,6 +159,9 @@ class RocketChatClient(EventEmitter):
             if callback:
                 callback(None, data)
             self.emit('logged_in', data)
+            #print('[+] rocketchat: logged in')
+            #print(data)
+
 
         self.ddp_client.call('login', [login_data], callback=logged_in)
 
@@ -202,6 +208,8 @@ class RocketChatClient(EventEmitter):
             if callback:
                 callback(None)
             self.emit('subscribed', name)
+            #print('[+] subscribed: %s' % subscription)
+
 
         if name in self.subscriptions:
             raise MeteorClientException('Already subcribed to {}'.format(name))
@@ -222,6 +230,7 @@ class RocketChatClient(EventEmitter):
         self.ddp_client.unsubscribe(self.subscriptions[name]['id'])
         del self.subscriptions[name]
         self.emit('unsubscribed', name)
+        #print('[+] unsubscribed: %s' % subscription)
 
     #
     # Collection Management
@@ -303,10 +312,12 @@ class RocketChatClient(EventEmitter):
 
     def failed(self, data):
         self.emit('failed', str(data))
+        #print('[-] %s' % str(data))
 
     def added(self, collection, id, fields):
         self.collection_data.add_data(collection, id, fields)
         self.emit('added', collection, id, fields)
+        #print('[+] added %s: %s' % (collection, id))
 
     def changed(self, collection, id, fields, cleared):
         self.collection_data.change_data(collection, id, fields)

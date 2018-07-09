@@ -19,35 +19,11 @@ class RocketChatBot():
         self.client = RocketChatClient(protocol + server + '/websocket',debug=self.debug)
 
         # registering internal handlers
-        self.client.on('connected', self._connected)
-        self.client.on('closed', self._closed)
-        self.client.on('logged_in', self._logged_in)
-        self.client.on('failed', self._failed)
-        self.client.on('added', self._added)
         self.client.on('changed', self._changed)
-        self.client.on('unsubscribed', self._unsubscribed)
-        self.client.on('subscribed', self._subscribed)
 
     """
     Internal events handlers
     """
-    def _connected(self):
-        print("[+] rocketchat: connected")
-        self.client.subscribe('stream-room-messages', ['__my_messages__', False], self.cb1)
-
-    def _closed(self, code, reason):
-        print('[-] rocketchat: connection closed: %s (%d)' % (reason, code))
-
-    def _logged_in(self, data):
-        print('[+] rocketchat: logged in')
-        print(data)
-
-    def _failed(self, collection, data):
-        print('[-] %s' % str(data))
-
-    def _added(self, collection, id, fields):
-        print('[+] added %s: %s' % (collection, id))
-
     def _changed(self, collection, mid, fields):
         print('[+] changed: %s %s' % (collection, mid))
 
@@ -65,12 +41,6 @@ class RocketChatBot():
 
         if args[0].get('attachments'):
             return self._downloading(args[0])
-
-    def _subscribed(self, subscription):
-        print('[+] subscribed: %s' % subscription)
-
-    def _unsubscribed(self, subscription):
-        print('[+] unsubscribed: %s' % subscription)
 
     """
     Internal callback handlers
@@ -115,6 +85,7 @@ class RocketChatBot():
     """
     def start(self):
         self.client.connect()
+        self.client.subscribe('stream-room-messages', ['__my_messages__', False], self.cb1)
         self.client.login(self.username, self.password.encode('utf-8'), callback=self.cb)
 
         # let's yeld to background task
@@ -126,3 +97,25 @@ class RocketChatBot():
 
     def sendMessage(self, id, message):
         self.client.call('sendMessage', [{'msg': message, 'rid': id}], self.cb)
+
+    """ 
+    Internal callback handlers
+    """
+    def cb(self, error, data):
+        if not error:
+            if self.debug:
+                print(data)
+            return
+
+        print('[-] callback error:')
+        print(error)
+
+    def cb1(self, data):
+        # if not self.debug:
+        #     return
+        if(len(data)>0):
+            print(data)
+            self._incoming(data)
+        else:
+            print("[+] callback success")
+
