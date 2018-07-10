@@ -39,6 +39,8 @@ class RocketChatClient(EventEmitter):
         self.collection_data = CollectionData()
         self.ddp_client = DDPClient(url, auto_reconnect=auto_reconnect,
                                     auto_reconnect_timeout=auto_reconnect_timeout, debug=debug)
+        self._prefixs = []
+
         self.ddp_client.on('connected', self.connected)
         self.ddp_client.on('socket_closed', self.closed)
         self.ddp_client.on('failed', self.failed)
@@ -320,6 +322,22 @@ class RocketChatClient(EventEmitter):
         #print('[+] added %s: %s' % (collection, id))
 
     def changed(self, collection, id, fields, cleared):
+        print('[+] changed: %s %s' % (collection, id))
+
+        if not fields.get('args'):
+            return
+
+        args = fields['args']
+
+        if args[0] == "GENERAL":
+            print("[+] message: general, skipping")
+            return
+
+        if args[0].get('msg'):
+            return self.incoming(args[0])
+
+        if args[0].get('attachments'):
+            return self.downloading(args[0])
         self.collection_data.change_data(collection, id, fields)
         self.emit('changed', collection, id, fields)
         #self.collection_data.change_data(collection, id, fields, cleared)
@@ -349,3 +367,51 @@ class RocketChatClient(EventEmitter):
 
         if not self.connected:
             raise MeteorClientException('Could not subscribe because a connection has not been established')
+
+    """
+    Internal dispatcher
+    """
+    def incoming(self, data):
+        print("[+] Message from %s: %s" % (data['u']['username'], data['msg']))
+        print("[+] Incoming Message")
+        #self.sendMessage(data['rid'],  "I hear you")
+        # print(data)
+        #Check if message was sent by another user
+
+        for prefix in self._prefixs:
+            if data['msg'].startswith(prefix['prefix']):
+                prefix['handler'](self, data)
+
+    def downloading(self, data):
+        print("[+] attachement from %s: %d files" % (data['u']['username'], len(data['attachments'])))
+
+    """
+    Public initializers
+    """
+    def addPrefixHandler(self, prefix, handler):
+        self._prefixs.append({'prefix': prefix, 'handler': handler})
+
+    def sendMessage(self, id, message):
+        self.call('sendMessage', [{'msg': message, 'rid': id}], self.cb)
+
+    """ 
+    Internal callback handlers
+    """
+    def cb(self, error, data):
+        if not error:
+            if self.debug:
+                print(data)
+            return
+
+        print('[-] callback error:')
+        print(error)
+
+    def cb1(self, data):
+        # if not self.debug:
+        #     return
+        if(len(data)>0):
+            print(data)
+            self.incoming(data)
+        else:
+            print("[+] callback success")
+
