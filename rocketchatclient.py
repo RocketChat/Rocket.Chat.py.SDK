@@ -40,6 +40,7 @@ class RocketChatClient(EventEmitter):
         self.ddp_client = DDPClient(url, auto_reconnect=auto_reconnect,
                                     auto_reconnect_timeout=auto_reconnect_timeout, debug=debug)
         self._prefixs = []
+        self.debug=debug
 
         self.ddp_client.on('connected', self.connected)
         self.ddp_client.on('socket_closed', self.closed)
@@ -405,13 +406,3 @@ class RocketChatClient(EventEmitter):
 
         print('[-] callback error:')
         print(error)
-
-    def cb1(self, data):
-        # if not self.debug:
-        #     return
-        if(len(data)>0):
-            print(data)
-            self.incoming(data)
-        else:
-            print("[+] callback success")
-
