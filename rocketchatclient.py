@@ -34,7 +34,13 @@ class CollectionData(object):
         del self.data[collection][id]
 
 class RocketChatClient(EventEmitter):
-    def __init__(self, url, auto_reconnect=True, auto_reconnect_timeout=0.5, debug=False):
+    def __init__(self, url, auto_reconnect=True, auto_reconnect_timeout=0.5, debug=False, ssl=True):
+        if ssl:
+            protocol = 'wss://'
+        else:
+            protocol = 'ws://'
+
+        url = protocol + url + '/websocket'
         EventEmitter.__init__(self)
         self.collection_data = CollectionData()
         self.ddp_client = DDPClient(url, auto_reconnect=auto_reconnect,
@@ -57,12 +63,14 @@ class RocketChatClient(EventEmitter):
     def connect(self):
         """Connect to the meteor server"""
         self.ddp_client.connect()
-        #print("[+] rocketchat: connected")
+        if(self.debug):
+          print("[+] rocketchat: connected")
 
     def close(self):
         """Close connection with meteor server"""
         self.ddp_client.close()
-        #print('[-] rocketchat: connection closed: %s (%d)' % (reason, code))
+        if(self.debug):
+          print('[-] rocketchat: connection closed: %s (%d)' % (reason, code))
 
     def _reconnected(self):
         """Reconnect
@@ -116,6 +124,8 @@ class RocketChatClient(EventEmitter):
         # TODO: keep the tokenExpires around so we know the next time
         #       we need to authenticate
 
+        # encode the password
+        password = password.encode('utf-8')
         # hash the password
         hashed = hashlib.sha256(password).hexdigest()
         # handle username or email address
@@ -162,8 +172,9 @@ class RocketChatClient(EventEmitter):
             if callback:
                 callback(None, data)
             self.emit('logged_in', data)
-            #print('[+] rocketchat: logged in')
-            #print(data)
+            if(self.debug):
+              print('[+] rocketchat: logged in')
+              print(data)
 
 
         self.ddp_client.call('login', [login_data], callback=logged_in)
@@ -211,7 +222,6 @@ class RocketChatClient(EventEmitter):
             if callback:
                 callback(None)
             self.emit('subscribed', name)
-            #print('[+] subscribed: %s' % subscription)
 
 
         if name in self.subscriptions:
@@ -233,7 +243,6 @@ class RocketChatClient(EventEmitter):
         self.ddp_client.unsubscribe(self.subscriptions[name]['id'])
         del self.subscriptions[name]
         self.emit('unsubscribed', name)
-        #print('[+] unsubscribed: %s' % subscription)
 
     #
     # Collection Management
@@ -315,12 +324,14 @@ class RocketChatClient(EventEmitter):
 
     def failed(self, data):
         self.emit('failed', str(data))
-        #print('[-] %s' % str(data))
+        if(self.debug):
+          print('[-] %s' % str(data))
 
     def added(self, collection, id, fields):
         self.collection_data.add_data(collection, id, fields)
         self.emit('added', collection, id, fields)
-        #print('[+] added %s: %s' % (collection, id))
+        if(self.debug):
+          print('[+] added %s: %s' % (collection, id))
 
     def changed(self, collection, id, fields, cleared):
         print('[+] changed: %s %s' % (collection, id))
@@ -406,3 +417,12 @@ class RocketChatClient(EventEmitter):
 
         print('[-] callback error:')
         print(error)
+
+    def cb1(self, data):
+        if(data):
+          print(data)
+          self._incoming(data)
+        else:
+          print(data)
+          print("[+] callback success")
+

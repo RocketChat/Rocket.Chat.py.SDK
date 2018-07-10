@@ -12,6 +12,11 @@ pip install -r requirements.txt
 
 Run `easybot.py` to test it.
 
+```
+python easybot.py
+```
+
+Say hello and the bot will answer you.
 
 ### Demo
 
