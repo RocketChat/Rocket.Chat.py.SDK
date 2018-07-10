@@ -10,6 +10,7 @@ class MeteorClientException(Exception):
     """Custom Exception"""
     pass
 
+
 class CollectionData(object):
     def __init__(self):
         self.data = {}
@@ -17,7 +18,7 @@ class CollectionData(object):
     def add_data(self, collection, id, fields):
         if collection not in self.data:
             self.data[collection] = {}
-        if not id in self.data[collection]:
+        if id not in self.data[collection]:
             self.data[collection][id] = {}
         for key, value in fields.items():
             self.data[collection][id][key] = value
@@ -25,7 +26,7 @@ class CollectionData(object):
     def change_data(self, collection, id, fields):
         if collection not in self.data:
             self.data[collection] = {}
-        if not id in self.data[collection]:
+        if id not in self.data[collection]:
             self.data[collection][id] = {}
         for key, value in fields.items():
             self.data[collection][id][key] = value
@@ -33,8 +34,10 @@ class CollectionData(object):
     def remove_data(self, collection, id):
         del self.data[collection][id]
 
+
 class RocketChatClient(EventEmitter):
-    def __init__(self, url, auto_reconnect=True, auto_reconnect_timeout=0.5, debug=False, ssl=True):
+    def __init__(self, url, auto_reconnect=True,
+                 auto_reconnect_timeout=0.5, debug=False, ssl=True):
         if ssl:
             protocol = 'wss://'
         else:
@@ -43,10 +46,13 @@ class RocketChatClient(EventEmitter):
         url = protocol + url + '/websocket'
         EventEmitter.__init__(self)
         self.collection_data = CollectionData()
-        self.ddp_client = DDPClient(url, auto_reconnect=auto_reconnect,
-                                    auto_reconnect_timeout=auto_reconnect_timeout, debug=debug)
+        self.ddp_client = DDPClient(
+            url,
+            auto_reconnect=auto_reconnect,
+            auto_reconnect_timeout=auto_reconnect_timeout,
+            debug=debug)
         self._prefixs = []
-        self.debug=debug
+        self.debug = debug
 
         self.ddp_client.on('connected', self.connected)
         self.ddp_client.on('socket_closed', self.closed)
@@ -64,13 +70,15 @@ class RocketChatClient(EventEmitter):
         """Connect to the meteor server"""
         self.ddp_client.connect()
         if(self.debug):
-          print("[+] rocketchat: connected")
+            print("[+] rocketchat: connected")
 
     def close(self):
         """Close connection with meteor server"""
         self.ddp_client.close()
         if(self.debug):
-          print('[-] rocketchat: connection closed: %s (%d)' % (reason, code))
+            print(
+                '[-] rocketchat: connection closed: %s (%d)' %
+                (reason, code))
 
     def _reconnected(self):
         """Reconnect
@@ -102,7 +110,6 @@ class RocketChatClient(EventEmitter):
         else:
             self._resubscribe()
 
-
     def _resubscribe(self):
         self.collection_data.data = {}
         cur_subs = self.subscriptions.items()
@@ -110,9 +117,85 @@ class RocketChatClient(EventEmitter):
         for name, value in cur_subs:
             self.subscribe(name, value['params'])
         self.emit('reconnected')
+
+    #
+    # Event Handlers
+    #
+    def connected(self):
+        self.connected = True
+        self.emit('connected')
+
+    def closed(self, code, reason):
+        self.connected = False
+        self.emit('closed', code, reason)
+
+    def failed(self, data):
+        self.emit('failed', str(data))
+        if(self.debug):
+            print('[-] %s' % str(data))
+
+    def added(self, collection, id, fields):
+        self.collection_data.add_data(collection, id, fields)
+        self.emit('added', collection, id, fields)
+        if(self.debug):
+            print('[+] added %s: %s' % (collection, id))
+
+    def changed(self, collection, id, fields, cleared):
+        print('[+] changed: %s %s' % (collection, id))
+
+        if not fields.get('args'):
+            return
+
+        args = fields['args']
+
+        if args[0] == "GENERAL":
+            print("[+] message: general, skipping")
+            return
+
+        if args[0].get('msg'):
+            return self.incoming(args[0])
+
+        if args[0].get('attachments'):
+            return self.downloading(args[0])
+        self.collection_data.change_data(collection, id, fields)
+        self.emit('changed', collection, id, fields)
+        #self.collection_data.change_data(collection, id, fields, cleared)
+        #self.emit('changed', collection, id, fields, cleared)
+
+    def removed(self, collection, id):
+        self.collection_data.remove_data(collection, id)
+        self.emit('removed', collection, id)
+
     #
     # Account Management
     #
+    def _resume(self, token, callback=None):
+        login_data = {'resume': token}
+        self._login(login_data, callback=callback)
+
+    def _login(self, login_data, callback=None):
+        self.emit('logging_in')
+
+        def logged_in(error, data):
+            if error:
+                if self._login_token:
+                    self._login_token = None
+                    self._login(self._login_data, callback=callback)
+                    return
+                if callback:
+                    callback(error, None)
+                return
+
+            self._login_token = data['token']
+
+            if callback:
+                callback(None, data)
+            self.emit('logged_in', data)
+            if(self.debug):
+                print('[+] rocketchat: logged in')
+                print(data)
+
+        self.ddp_client.call('login', [login_data], callback=logged_in)
 
     def login(self, user, password, token=None, callback=None):
         """Login with a username and password
@@ -151,35 +234,6 @@ class RocketChatClient(EventEmitter):
         else:
             self._login(self._login_data, callback=callback)
 
-    def _resume(self, token, callback=None):
-        login_data = {'resume': token}
-        self._login(login_data, callback=callback)
-
-    def _login(self, login_data, callback=None):
-        self.emit('logging_in')
-
-        def logged_in(error, data):
-            if error:
-                if self._login_token:
-                    self._login_token = None
-                    self._login(self._login_data, callback=callback)
-                    return
-                if callback:
-                    callback(error, None)
-                return
-
-            self._login_token = data['token']
-
-            if callback:
-                callback(None, data)
-            self.emit('logged_in', data)
-            if(self.debug):
-              print('[+] rocketchat: logged in')
-              print(data)
-
-
-        self.ddp_client.call('login', [login_data], callback=logged_in)
-
     def logout(self, callback=None):
         """Logout a user
         Keyword Arguments:
@@ -190,7 +244,6 @@ class RocketChatClient(EventEmitter):
     #
     # Meteor Method Call
     #
-
     def call(self, method, params, callback=None):
         """Call a remote method
         Arguments:
@@ -204,11 +257,12 @@ class RocketChatClient(EventEmitter):
     #
     # Subscription Management
     #
+    def subscribe_to_messages(self):
+        self.subscribe('stream-room-messages',
+                       ['__my_messages__', False], self.cb1)
 
-    def subscribeToMessages(self):
-        self.subscribe('stream-room-messages', ['__my_messages__', False], self.cb1)
-
-    def subscribe(self, name='stream-room-messages', params=['__my_messages__'], callback=None):
+    def subscribe(self, name='stream-room-messages',
+                  params=['__my_messages__'], callback=None):
         """Subscribe to a collection
         Arguments:
         name - the name of the publication
@@ -226,7 +280,6 @@ class RocketChatClient(EventEmitter):
             if callback:
                 callback(None)
             self.emit('subscribed', name)
-
 
         if name in self.subscriptions:
             raise MeteorClientException('Already subcribed to {}'.format(name))
@@ -248,10 +301,96 @@ class RocketChatClient(EventEmitter):
         del self.subscriptions[name]
         self.emit('unsubscribed', name)
 
+    def react_to_messages():
+        """
+        TODO
+        """
+        pass
+
+    def respod_to_messages():
+        """
+        TODO
+        """
+        pass
+
+    def async_call():
+        """
+        TODO
+        """
+        pass
+
+    def cache_call():
+        """
+        TODO
+        """
+        pass
+
+    def call_method():
+        """
+        TODO
+        """
+        pass
+
+    def use_log():
+        """
+        TODO
+        """
+        pass
+
+    def get_room_id():
+        """
+        TODO
+        """
+        pass
+
+    def get_room_name():
+        """
+        TODO
+        """
+        pass
+
+    def get_direct_message_room_id():
+        """
+        TODO
+        """
+        pass
+
+    def join_room():
+        """
+        TODO
+        """
+        pass
+
+    def prepare_message():
+        """
+        TODO
+        """
+        pass
+
+    def send_message(self, id, message):
+        self.call('sendMessage', [{'msg': message, 'rid': id}], self.cb)
+
+    def send_to_room_id():
+        """
+        TODO
+        """
+        pass
+
+    def send_to_room():
+        """
+        TODO
+        """
+        pass
+
+    def send_direct_to_user():
+        """
+        TODO
+        """
+        pass
+
     #
     # Collection Management
     #
-
     def find(self, collection, selector={}):
         """Find data in a collection
         Arguments:
@@ -303,7 +442,8 @@ class RocketChatClient(EventEmitter):
         Keyword Arguments:
         callback - Optional. If present, called with an error object as the first argument and,
         if no error, the number of affected documents as the second."""
-        self.call("/" + collection + "/update", [selector, modifier], callback=callback)
+        self.call("/" + collection + "/update",
+                  [selector, modifier], callback=callback)
 
     def remove(self, collection, selector, callback=None):
         """Remove an item from a collection
@@ -315,58 +455,8 @@ class RocketChatClient(EventEmitter):
         self.call("/" + collection + "/remove", [selector], callback=callback)
 
     #
-    # Event Handlers
-    #
-
-    def connected(self):
-        self.connected = True
-        self.emit('connected')
-
-    def closed(self, code, reason):
-        self.connected = False
-        self.emit('closed', code, reason)
-
-    def failed(self, data):
-        self.emit('failed', str(data))
-        if(self.debug):
-          print('[-] %s' % str(data))
-
-    def added(self, collection, id, fields):
-        self.collection_data.add_data(collection, id, fields)
-        self.emit('added', collection, id, fields)
-        if(self.debug):
-          print('[+] added %s: %s' % (collection, id))
-
-    def changed(self, collection, id, fields, cleared):
-        print('[+] changed: %s %s' % (collection, id))
-
-        if not fields.get('args'):
-            return
-
-        args = fields['args']
-
-        if args[0] == "GENERAL":
-            print("[+] message: general, skipping")
-            return
-
-        if args[0].get('msg'):
-            return self.incoming(args[0])
-
-        if args[0].get('attachments'):
-            return self.downloading(args[0])
-        self.collection_data.change_data(collection, id, fields)
-        self.emit('changed', collection, id, fields)
-        #self.collection_data.change_data(collection, id, fields, cleared)
-        #self.emit('changed', collection, id, fields, cleared)
-
-    def removed(self, collection, id):
-        self.collection_data.remove_data(collection, id)
-        self.emit('removed', collection, id)
-
-    #
     # Helper functions
     #
-
     def _time_from_start(self, start):
         now = datetime.datetime.now()
         return now - start
@@ -382,37 +472,36 @@ class RocketChatClient(EventEmitter):
             time.sleep(0.1)
 
         if not self.connected:
-            raise MeteorClientException('Could not subscribe because a connection has not been established')
+            raise MeteorClientException(
+                'Could not subscribe because a connection has not been established')
 
-    """
-    Internal dispatcher
-    """
+    #
+    # Internal dispatcher
+    #
     def incoming(self, data):
         #print("[+] Message from %s: %s" % (data['u']['username'], data['msg']))
         print("[+] Incoming Message")
         #self.sendMessage(data['rid'],  "I hear you")
         # print(data)
-        #Check if message was sent by another user
+        # Check if message was sent by another user
 
         for prefix in self._prefixs:
             if data['msg'].startswith(prefix['prefix']):
                 prefix['handler'](self, data)
 
     def downloading(self, data):
-        print("[+] attachement from %s: %d files" % (data['u']['username'], len(data['attachments'])))
+        print("[+] attachement from %s: %d files" %
+              (data['u']['username'], len(data['attachments'])))
 
-    """
-    Public initializers
-    """
+    #
+    # Public initializers
+    #
     def addPrefixHandler(self, prefix, handler):
         self._prefixs.append({'prefix': prefix, 'handler': handler})
 
-    def sendMessage(self, id, message):
-        self.call('sendMessage', [{'msg': message, 'rid': id}], self.cb)
-
-    """ 
-    Internal callback handlers
-    """
+    #
+    # Internal callback handlers
+    #
     def cb(self, error, data):
         if not error:
             if self.debug:
@@ -423,11 +512,10 @@ class RocketChatClient(EventEmitter):
         print(error)
 
     def cb1(self, data):
-      if(data):
-        if(len(data)>0):
-          print(data)
-          self.incoming(data)
-        else:
-          print(data)
-          print("[+] callback success")
-
+        if(data):
+            if(len(data) > 0):
+                print(data)
+                self.incoming(data)
+            else:
+                print(data)
+                print("[+] callback success")
