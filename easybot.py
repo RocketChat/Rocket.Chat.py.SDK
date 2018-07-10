@@ -1,5 +1,5 @@
 import time
-from rocketchatclient import RocketChatClient, CollectionData, MeteorClientException
+from driver import Driver, CollectionData, MeteorClientException
 
 
 def start(bot):
@@ -11,12 +11,12 @@ def start(bot):
         bot.send_message(message['rid'], "Hi there user, I'm a Python Bot!")
         bot.send_message(message['rid'], "at your service")
 
-    bot.addPrefixHandler('hello', hello)
+    bot.add_prefix_handler('hello', hello)
 
     # let's yeld to background task
     while True:
         time.sleep(3600)
 
 
-bot = RocketChatClient(url='localhost:3000', ssl=False, debug=True)
+bot = Driver(url='localhost:3000', ssl=False, debug=True)
 start(bot)

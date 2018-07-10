@@ -35,7 +35,7 @@ class CollectionData(object):
         del self.data[collection][id]
 
 
-class RocketChatClient(EventEmitter):
+class Driver(EventEmitter):
     def __init__(self, url, auto_reconnect=True,
                  auto_reconnect_timeout=0.5, debug=False, ssl=True):
         if ssl:
@@ -496,7 +496,7 @@ class RocketChatClient(EventEmitter):
     #
     # Public initializers
     #
-    def addPrefixHandler(self, prefix, handler):
+    def add_prefix_handler(self, prefix, handler):
         self._prefixs.append({'prefix': prefix, 'handler': handler})
 
     #
