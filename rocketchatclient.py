@@ -102,6 +102,7 @@ class RocketChatClient(EventEmitter):
         else:
             self._resubscribe()
 
+
     def _resubscribe(self):
         self.collection_data.data = {}
         cur_subs = self.subscriptions.items()
@@ -204,7 +205,10 @@ class RocketChatClient(EventEmitter):
     # Subscription Management
     #
 
-    def subscribe(self, name, params=[], callback=None):
+    def subscribeToMessages(self):
+        self.subscribe('stream-room-messages', ['__my_messages__', False], self.cb1)
+
+    def subscribe(self, name='stream-room-messages', params=['__my_messages__'], callback=None):
         """Subscribe to a collection
         Arguments:
         name - the name of the publication
@@ -384,7 +388,7 @@ class RocketChatClient(EventEmitter):
     Internal dispatcher
     """
     def incoming(self, data):
-        print("[+] Message from %s: %s" % (data['u']['username'], data['msg']))
+        #print("[+] Message from %s: %s" % (data['u']['username'], data['msg']))
         print("[+] Incoming Message")
         #self.sendMessage(data['rid'],  "I hear you")
         # print(data)
@@ -419,9 +423,10 @@ class RocketChatClient(EventEmitter):
         print(error)
 
     def cb1(self, data):
-        if(data):
+      if(data):
+        if(len(data)>0):
           print(data)
-          self._incoming(data)
+          self.incoming(data)
         else:
           print(data)
           print("[+] callback success")

@@ -3,7 +3,7 @@ from rocketchatclient import RocketChatClient, CollectionData, MeteorClientExcep
 
 def start(bot):
     bot.connect()
-    bot.subscribe('stream-room-messages', ['__my_messages__', False], bot.cb1)
+    bot.subscribeToMessages()
     bot.login('pybot', '12345', callback=bot.cb)
 
     def hello(bot, message):
