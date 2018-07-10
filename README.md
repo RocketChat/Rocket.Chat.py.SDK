@@ -10,7 +10,7 @@ Install the dependencies:
 pip install -r requirements.txt
 ```
 
-Run `easybot.py` to test it.
+Run the bot.
 
 ```
 python easybot.py
@@ -18,13 +18,9 @@ python easybot.py
 
 Say hello and the bot will answer you.
 
-### Demo
-
-**TODO**
-
 ## Overview
 
-**TODO**
+This is a python SDK to make the access to Rocket.Chat easier.
 
 ## Docs
 
@@ -32,7 +28,7 @@ Say hello and the bot will answer you.
 
 ## Message Objects
 
-**TODO**
+The Rocket.Chat message schema can be found [here](https://rocket.chat/docs/developer-guides/schema-definition/).
 
 ## Driver Methods 
 
@@ -40,6 +36,20 @@ Say hello and the bot will answer you.
 
 ## Development
 
-**TODO**
+A local instance of Rocket.Chat is required for unit tests to confirm 
+connection and subscription methods are functional. And it helps to manually 
+run your SDK interactions (i.e. bots) locally while in development.
 
-### Settings
+### Docker
+
+Just run:
+
+```
+docker-compose up mongo rocketchat
+```
+
+* After that access `localhost:3000`
+
+* Create the administrator user.
+
+* Add the bot user with the necessary settings.
