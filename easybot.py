@@ -4,8 +4,8 @@ from driver import Driver, CollectionData, MeteorClientException
 
 def start(bot):
     bot.connect()
-    bot.subscribe_to_messages()
     bot.login(user='pybot', password='12345', callback=bot.cb)
+    bot.subscribe_to_messages()
 
     def hello(bot, message):
         bot.send_message(message['rid'], "Hi there user, I'm a Python Bot!")
