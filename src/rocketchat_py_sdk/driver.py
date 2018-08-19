@@ -367,6 +367,28 @@ class Driver(EventEmitter):
         """
         pass
 
+    """ 
+    Messages handlers
+    """
+    def delay_message_sent(self, actual_message):
+        self.client.call('stream-notify-room',
+                         [self.channel + '/typing', self.username, True])
+        time.sleep(self.previous_delay)
+        self.client.call('stream-notify-room',
+                         [self.channel + '/typing', self.username, False])
+
+        # TODO: this amount of words need to be changeable
+        words_per_second = 5 
+        number_of_words = len(actual_message.split())
+
+        type_to_read_message = number_of_words // words_per_second
+
+        # TODO: this amount of time need to be changeable
+        max_delay_time = 4 
+
+        self.previous_delay = min(max_delay_time, type_to_read_message)
+
+
     def send_message(self, id, message):
         self.call('sendMessage', [{'msg': message, 'rid': id}], self.cb)
 

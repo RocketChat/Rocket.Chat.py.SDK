@@ -10,7 +10,7 @@ Install the dependencies in your virtualenv:
 pip install -r requirements.txt
 ```
 
-Run the bot.
+Run the example bot.
 
 ```sh
 python easybot.py
