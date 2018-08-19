@@ -1,5 +1,12 @@
 import time
-from rocketchat_py_sdk import driver as driver
+
+# import the local driver for tests
+import sys
+sys.path.append('src/rocketchat_py_sdk/')
+from driver import Driver, CollectionData, MeteorClientException
+
+# import the published package
+#from rocketchat_py_sdk import driver as driver
 
 
 def start(bot):
@@ -17,6 +24,9 @@ def start(bot):
     while True:
         time.sleep(3600)
 
+# local driver call
+bot = Driver(url='localhost:3000', ssl=False, debug=True)
 
-bot = driver.Driver(url='localhost:3000', ssl=False, debug=True)
+# published package driver call
+#bot = driver.Driver(url='localhost:3000', ssl=False, debug=True)
 start(bot)
