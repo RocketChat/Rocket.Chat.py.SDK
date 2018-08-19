@@ -37,7 +37,8 @@ class CollectionData(object):
 
 class Driver(EventEmitter):
     def __init__(self, url, auto_reconnect=True,
-                 auto_reconnect_timeout=0.5, debug=False, ssl=True):
+                 auto_reconnect_timeout=0.5, debug=False, ssl=True,
+                previous_delay=3, max_delay_time=4, words_per_second=5):
         if ssl:
             protocol = 'wss://'
         else:
@@ -377,19 +378,20 @@ class Driver(EventEmitter):
         self.client.call('stream-notify-room',
                          [self.channel + '/typing', self.username, False])
 
-        # TODO: this amount of words need to be changeable
-        words_per_second = 5 
+        self.words_per_second
         number_of_words = len(actual_message.split())
 
         type_to_read_message = number_of_words // words_per_second
 
-        # TODO: this amount of time need to be changeable
-        max_delay_time = 4 
+        self.max_delay_time
 
         self.previous_delay = min(max_delay_time, type_to_read_message)
 
 
-    def send_message(self, id, message):
+    def send_message(self, id, message, enable=False):
+        if enable :
+            self.delay_message_sent(message)
+
         self.call('sendMessage', [{'msg': message, 'rid': id}], self.cb)
 
     def send_to_room_id():
