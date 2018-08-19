@@ -1,5 +1,5 @@
 import time
-from driver import Driver, CollectionData, MeteorClientException
+from rocketchat_py_sdk import driver as driver
 
 
 def start(bot):
@@ -18,5 +18,5 @@ def start(bot):
         time.sleep(3600)
 
 
-bot = Driver(url='localhost:3000', ssl=False, debug=True)
+bot = driver.Driver(url='localhost:3000', ssl=False, debug=True)
 start(bot)
