@@ -1,9 +1,12 @@
-import datetime
 import time
+import datetime
 import hashlib
+import logging
 
 from DDPClient import DDPClient
 from pyee import EventEmitter
+
+logger = logging.getLogger(__name__)
 
 
 class MeteorClientException(Exception):
@@ -36,9 +39,8 @@ class CollectionData(object):
 
 
 class Driver(EventEmitter):
-    def __init__(self, url, auto_reconnect=True,
-                 auto_reconnect_timeout=0.5, debug=False, ssl=True,
-                previous_delay=3, max_delay_time=4, words_per_second=5):
+    def __init__(self, url, ssl=True, auto_reconnect=True,
+                 auto_reconnect_timeout=0.5, debug=False):
         if ssl:
             protocol = 'wss://'
         else:
@@ -371,27 +373,7 @@ class Driver(EventEmitter):
     """ 
     Messages handlers
     """
-    def delay_message_sent(self, actual_message):
-        self.client.call('stream-notify-room',
-                         [self.channel + '/typing', self.username, True])
-        time.sleep(self.previous_delay)
-        self.client.call('stream-notify-room',
-                         [self.channel + '/typing', self.username, False])
-
-        self.words_per_second
-        number_of_words = len(actual_message.split())
-
-        type_to_read_message = number_of_words // words_per_second
-
-        self.max_delay_time
-
-        self.previous_delay = min(max_delay_time, type_to_read_message)
-
-
-    def send_message(self, id, message, enable=False):
-        if enable :
-            self.delay_message_sent(message)
-
+    def send_message(self, id, message):
         self.call('sendMessage', [{'msg': message, 'rid': id}], self.cb)
 
     def send_to_room_id():
