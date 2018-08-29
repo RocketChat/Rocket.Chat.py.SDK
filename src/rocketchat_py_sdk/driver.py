@@ -485,11 +485,10 @@ class Driver(EventEmitter):
     # Internal dispatcher
     #
     def incoming(self, data):
-        #print("[+] Message from %s: %s" % (data['u']['username'], data['msg']))
         print("[+] Incoming Message")
-        #self.sendMessage(data['rid'],  "I hear you")
-        # print(data)
-        # Check if message was sent by another user
+
+        if data['u']['username'] == self._login_data['user']['username']:
+            return
 
         for prefix in self._prefixs:
             if data['msg'].startswith(prefix['prefix']):

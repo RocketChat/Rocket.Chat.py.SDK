@@ -1,3 +1,0 @@
-DateTime==4.2
-python-ddp==0.1.5
-pyee==5.0.0
