@@ -7,13 +7,13 @@ Python DDP client for Rocket.Chat.
 Install the dependencies in your virtualenv:
 
 ```sh
-pip install -r requirements.txt
+pip install -e .
 ```
 
 Run the example bot.
 
 ```sh
-python easybot.py
+python examples/bot.py
 ```
 
 Say **hello** and the bot will answer you.
