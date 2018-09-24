@@ -376,6 +376,9 @@ class Driver(EventEmitter):
     def send_message(self, id, message):
         self.call('sendMessage', [{'msg': message, 'rid': id}], self.cb)
 
+    def send_attachment(self, id, attachments):
+        self.call('sendMessage', [{'attachments':attachments, 'rid': id}], self.cb)
+
     def send_to_room_id():
         """
         TODO
